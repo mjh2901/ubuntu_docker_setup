@@ -1,7 +1,10 @@
 # Ubuntu Docker Setup with Portainer and Neofetch
 
+
 This repository contains a script to set up **Docker**, the **Docker Compose plugin**, **Portainer**, and **Neofetch** on an Ubuntu server.  
 It also creates a **user-centric Docker workspace** for future projects.
+
+The script is meant to run on a fresh install of Ubuntu (or any linux distro that uses apt-get) server.  
 
 ---
 
@@ -19,7 +22,7 @@ It also creates a **user-centric Docker workspace** for future projects.
 
 ## Prerequisites
 
-- Ubuntu 20.04+ or 22.04+
+- Ubuntu 20.04+
 - Sudo or root privileges
 - Internet connection
 

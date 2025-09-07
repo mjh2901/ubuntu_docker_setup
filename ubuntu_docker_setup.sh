@@ -3,6 +3,7 @@
 # ubuntu_docker_setup.sh
 # Installs Docker, Docker Compose plugin, Portainer, Neofetch,
 # and sets up a user-centric Docker workspace.
+# Works on Ubuntu 20.04+, 22.04+, 24.04+.
 #
 # Usage:
 #   sudo bash ubuntu_docker_setup.sh
@@ -15,6 +16,9 @@ log() {
     echo -e "\n[INFO] $1"
 }
 
+# ------------------------------
+# Ensure root
+# ------------------------------
 if [[ $EUID -ne 0 ]]; then
     echo "[ERROR] Please run this script as root or using sudo."
     exit 1
@@ -38,7 +42,7 @@ log "Installing prerequisites..."
 apt install -y ca-certificates curl gnupg lsb-release neofetch
 
 # ------------------------------
-# Add Docker GPG key and repo
+# Docker repository setup
 # ------------------------------
 log "Adding Docker’s official GPG key..."
 install -m 0755 -d /etc/apt/keyrings
@@ -47,10 +51,16 @@ chmod a+r /etc/apt/keyrings/docker.gpg
 
 ARCH=$(dpkg --print-architecture)
 RELEASE=$(lsb_release -cs)
-log "Setting up Docker repository..."
+
+# Check if Docker supports this release
+if ! curl -fsSL "https://download.docker.com/linux/ubuntu/dists/$RELEASE/" >/dev/null 2>&1; then
+    log "Codename $RELEASE not supported by Docker repo, falling back to jammy"
+    RELEASE=jammy
+fi
+
+log "Setting up Docker repository for $RELEASE..."
 echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $RELEASE stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-log "Updating package index..."
 apt update
 
 # ------------------------------
@@ -69,14 +79,13 @@ systemctl start docker
 # ------------------------------
 # Add user to Docker group
 # ------------------------------
-log "Adding user '$TARGET_USER' to the Docker group..."
+log "Adding user '$TARGET_USER' to Docker group..."
 usermod -aG docker $TARGET_USER
 
 # ------------------------------
 # Setup Docker workspace
 # ------------------------------
 log "Creating Docker workspace in $DOCKER_HOME..."
-mkdir -p "$DOCKER_HOME"
 mkdir -p "$PORTAINER_HOME"
 
 # ------------------------------
@@ -99,10 +108,8 @@ volumes:
   portainer_data:
 EOF
 
-# ------------------------------
-# Inform user about workflow
-# ------------------------------
-log "Portainer setup complete. To manage Portainer, run the following commands in $PORTAINER_HOME:"
+log "Portainer setup complete."
+echo "To manage Portainer, run the following commands in $PORTAINER_HOME:"
 echo "  docker compose up -d      # Start Portainer"
 echo "  docker compose down        # Stop Portainer"
 
@@ -113,28 +120,25 @@ log "Configuring Neofetch..."
 
 NEOFETCH_CONFIG_DIR="$USER_HOME/.config/neofetch"
 NEOFETCH_CONFIG_FILE="$NEOFETCH_CONFIG_DIR/config.conf"
-
 mkdir -p "$NEOFETCH_CONFIG_DIR"
 
-# Generate default config if doesn't exist
+# Copy default config if it doesn't exist
 if [ ! -f "$NEOFETCH_CONFIG_FILE" ]; then
     cp /etc/neofetch/config.conf "$NEOFETCH_CONFIG_FILE" 2>/dev/null || touch "$NEOFETCH_CONFIG_FILE"
 fi
 
-# Add IP display configuration if not already present
+# Add IP display if not already present
 if ! grep -q "ip_address" "$NEOFETCH_CONFIG_FILE"; then
     echo -e "\n# Show IP address\ninfo 'IP Address' info ip_address" >> "$NEOFETCH_CONFIG_FILE"
 fi
 
-# Add Neofetch to user's bash profile if not already present
+# Add Neofetch to user's bash profile
 BASH_PROFILE="$USER_HOME/.bashrc"
 if ! grep -q "neofetch" "$BASH_PROFILE"; then
     echo -e "\n# Run Neofetch at login\nneofetch" >> "$BASH_PROFILE"
 fi
 
-# ------------------------------
 # Run Neofetch once
-# ------------------------------
 log "Running Neofetch..."
 sudo -u "$TARGET_USER" neofetch
 

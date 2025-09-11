@@ -45,7 +45,7 @@ sudo apt install -y git
 3. **Clone this repository:**
 
 ```bash
-git clone https://github.com/your-username/ubuntu-docker-setup.git
+git clone https://github.com/mjh2901/ubuntu-docker-setup.git
 ```
 
 4. **Navigate to the repository folder:**

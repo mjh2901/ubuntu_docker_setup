@@ -82,14 +82,14 @@ systemctl start docker
 # Install Portainer
 # ----------------------------
 echo "Setting up Portainer..."
-mkdir -p /opt/portainer
-cd /opt/portainer
+mkdir -p ~/docker/portainer
+cd ~/docker/portainer
 
 # Create admin password file (mac0file)
 echo 'mac0file' > admin-password
 chmod 600 admin-password
 
-cat <<EOF > docker-compose.yml
+cat <<EOF > compose.yml
 services:
   portainer:
     image: portainer/portainer-ce:latest
@@ -143,6 +143,6 @@ EOF
 cd /opt/code-server
 docker compose up -d
 echo "✅ code-server is running on https://$(hostname -I | awk '{print $1}'):8443"
-
+neofetch
 echo "=========================="
 echo "All done! Git, Docker, Portainer, code-server, SSH, and Neofetch are installed and configured."

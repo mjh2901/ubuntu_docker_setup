@@ -22,7 +22,7 @@ The script is meant to run on a fresh install of Ubuntu (or any linux distro tha
 
 ## Prerequisites
 
-- Ubuntu 20.04+
+- Ubuntu 24.04+
 - Sudo or root privileges
 - Internet connection
 

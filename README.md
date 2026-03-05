@@ -67,9 +67,11 @@ sudo bash ubuntu_docker_setup.sh
 The script will:
 
 - Install Docker Engine, Docker CLI, containerd, and Docker Compose plugin
-- Add your user to the Docker group
+- Ask which local username should be configured as Docker admin
+- Add that user to the Docker group
 - Create a Docker workspace at `~/docker`
 - Set up Portainer in `~/docker/portainer` with `docker-compose.yml`
+- Set up code-server in `~/docker/code-server` with `compose.yml`
 - Install Neofetch, configure it to show the server IP, and run it at login
 
 > **Note:** You may need to log out and back in for Docker group changes to take effect.

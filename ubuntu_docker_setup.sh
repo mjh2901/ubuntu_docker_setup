@@ -78,12 +78,39 @@ apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker
 systemctl enable docker
 systemctl start docker
 
+# Prompt for the user who should manage Docker workloads.
+DEFAULT_DOCKER_USER="${SUDO_USER:-}"
+if [[ -n "$DEFAULT_DOCKER_USER" ]]; then
+  read -rp "Enter the username to configure as Docker admin [$DEFAULT_DOCKER_USER]: " TARGET_USER
+  TARGET_USER="${TARGET_USER:-$DEFAULT_DOCKER_USER}"
+else
+  read -rp "Enter the username to configure as Docker admin: " TARGET_USER
+fi
+
+if ! id "$TARGET_USER" >/dev/null 2>&1; then
+  echo "User '$TARGET_USER' does not exist. Exiting."
+  exit 1
+fi
+
+usermod -aG docker "$TARGET_USER"
+TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+if [[ -z "$TARGET_HOME" || ! -d "$TARGET_HOME" ]]; then
+  echo "Could not determine a valid home directory for '$TARGET_USER'. Exiting."
+  exit 1
+fi
+TARGET_UID=$(id -u "$TARGET_USER")
+TARGET_GID=$(id -g "$TARGET_USER")
+echo "✅ Added '$TARGET_USER' to the docker group."
+
+
 # ----------------------------
 # Install Portainer
 # ----------------------------
 echo "Setting up Portainer..."
-mkdir -p ~/docker/portainer
-cd ~/docker/portainer
+mkdir -p "$TARGET_HOME/docker/"
+mkdir -p "$TARGET_HOME/docker/portainer"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker"
+cd "$TARGET_HOME/docker/portainer"
 
 # Create admin password file (mac0file)
 echo 'mac0file' > admin-password
@@ -109,23 +136,25 @@ volumes:
   portainer_data:
 EOF
 
-docker compose up -d
+chown "$TARGET_USER:$TARGET_USER" admin-password compose.yml
+su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/portainer' && docker compose up -d"
 echo "✅ Portainer is running on https://$(hostname -I | awk '{print $1}'):9443"
 
 # ----------------------------
 # Install code-server
 # ----------------------------
 echo "Setting up code-server..."
-mkdir -p /opt/code-server/config /opt/code-server/workspace
+mkdir -p "$TARGET_HOME/docker/code-server"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/code-server"
 
-cat <<EOF > /opt/code-server/docker-compose.yml
+cat <<EOF > "$TARGET_HOME/docker/code-server/compose.yml"
 services:
   code-server:
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-server
     environment:
-      - PUID=0
-      - PGID=0
+      - PUID=$TARGET_UID
+      - PGID=$TARGET_GID
       - TZ=America/Los_Angeles
       - PROXY_DOMAIN=code-code.mikehathaway.com
       - DEFAULT_WORKSPACE=/config/workspace
@@ -140,9 +169,10 @@ volumes:
   code_config:
 EOF
 
-cd /opt/code-server
-docker compose up -d
+chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/code-server/compose.yml"
+su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/code-server' && docker compose up -d"
 echo "✅ code-server is running on https://$(hostname -I | awk '{print $1}'):8443"
 neofetch
 echo "=========================="
 echo "All done! Git, Docker, Portainer, code-server, SSH, and Neofetch are installed and configured."
+echo "Log out and back in as '$TARGET_USER' before running Docker commands directly as that user."

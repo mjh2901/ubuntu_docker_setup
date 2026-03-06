@@ -1,7 +1,7 @@
-# Ubuntu Docker Setup with Portainer and Neofetch
+# Ubuntu Docker Setup with Portainer, Tugtainer, and Neofetch
 
 
-This repository contains a script to set up **Docker**, the **Docker Compose plugin**, **Portainer**, and **Neofetch** on an Ubuntu server.  
+This repository contains a script to set up **Docker**, the **Docker Compose plugin**, **Portainer**, **Tugtainer**, and **Neofetch** on an Ubuntu server.  
 It also creates a **user-centric Docker workspace** for future projects.
 
 The script is meant to run on a fresh install of Ubuntu (or any linux distro that uses apt-get) server.  
@@ -15,6 +15,7 @@ The script is meant to run on a fresh install of Ubuntu (or any linux distro tha
 - [Using the Script](#using-the-script)
 - [Docker Workspace](#docker-workspace)
 - [Portainer Access](#portainer-access)
+- [Tugtainer Access](#tugtainer-access)
 - [Neofetch](#neofetch)
 - [Future Docker Projects](#future-docker-projects)
 
@@ -36,19 +37,19 @@ The script is meant to run on a fresh install of Ubuntu (or any linux distro tha
 sudo apt update && sudo apt upgrade -y
 ```
 
-2. **Install Git if not already installed:**
+1. **Install Git if not already installed:**
 
 ```bash
 sudo apt install -y git
 ```
 
-3. **Clone this repository:**
+1. **Clone this repository:**
 
 ```bash
 git clone https://github.com/mjh2901/ubuntu-docker-setup.git
 ```
 
-4. **Navigate to the repository folder:**
+1. **Navigate to the repository folder:**
 
 ```bash
 cd ubuntu-docker-setup
@@ -71,6 +72,7 @@ The script will:
 - Add that user to the Docker group
 - Create a Docker workspace at `~/docker`
 - Set up Portainer in `~/docker/portainer` with `docker-compose.yml`
+- Set up Tugtainer in `~/docker/tugtainer` with `compose.yml`
 - Install Neofetch, configure it to show the server IP, and run it at login for the user who invoked `sudo`
 
 > **Note:** You may need to log out and back in for Docker group changes to take effect.
@@ -81,15 +83,16 @@ The script will:
 
 All future Docker projects should live in the Docker workspace:
 
-```
+```text
 ~/docker
 ```
 
 Each project can have its own `docker-compose.yml` file.  
-For example, Portainer is located in:
+For example, Portainer and Tugtainer are located in:
 
-```
+```text
 ~/docker/portainer
+~/docker/tugtainer
 ```
 
 Manage containers with:
@@ -104,13 +107,31 @@ docker compose down      # Stop containers
 
 ## Portainer Access
 
-After running the script, you can access Portainer via your server's IP on port 9000:
+After running the script, you can access Portainer via your server's IP on port 9443:
 
-```
-http://<server-ip>:9000
+```text
+https://<server-ip>:9443
 ```
 
 Replace `<server-ip>` with the IP address shown at the end of the setup script.
+
+---
+
+## Tugtainer Access
+
+After running the script, you can access Tugtainer via your server's IP on port 9412:
+
+```text
+http://<server-ip>:9412
+```
+
+The generated `~/docker/tugtainer/compose.yml` includes a placeholder:
+
+```yaml
+AGENT_SECRET: your_secure_secret_here
+```
+
+Update that value before exposing the service publicly.
 
 ---
 
@@ -132,8 +153,8 @@ mkdir ~/docker/myproject
 cd ~/docker/myproject
 ```
 
-2. Add your `docker-compose.yml` for the project.
-3. Start or stop your containers:
+1. Add your `docker-compose.yml` for the project.
+1. Start or stop your containers:
 
 ```bash
 docker compose up -d

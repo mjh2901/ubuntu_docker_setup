@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # ----------------------------
 # Ubuntu Server Provisioning Script
 # ----------------------------
@@ -57,8 +59,8 @@ print_info() {
 }
 EOF
 
-  chown -R "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.config/neofetch"
-  chown "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.bashrc"
+chown -R "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.config/neofetch"
+chown "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.bashrc"
 
 # ----------------------------
 # Enable root SSH login with password
@@ -110,12 +112,10 @@ if [[ -z "$TARGET_HOME" || ! -d "$TARGET_HOME" ]]; then
 fi
 echo "✅ Added '$TARGET_USER' to the docker group."
 
-
 # ----------------------------
 # Install Portainer
 # ----------------------------
 echo "Setting up Portainer..."
-mkdir -p "$TARGET_HOME/docker/"
 mkdir -p "$TARGET_HOME/docker/portainer"
 chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker"
 cd "$TARGET_HOME/docker/portainer"
@@ -177,6 +177,7 @@ chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/tugtainer/compose.yml"
 su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/tugtainer' && docker compose up -d"
 echo "✅ Tugtainer is running on http://$(hostname -I | awk '{print $1}'):9412"
 
+# Show system summary at the end of provisioning.
 neofetch
 echo "=========================="
 echo "All done! Git, Docker, Portainer, Tugtainer, SSH, and Neofetch are installed and configured."

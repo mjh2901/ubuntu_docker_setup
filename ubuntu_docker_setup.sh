@@ -27,14 +27,21 @@ git --version
 echo "Installing Neofetch..."
 apt install -y neofetch
 
-echo "Configuring Neofetch for root login..."
-touch /root/.bashrc
-if ! grep -q "neofetch" /root/.bashrc; then
-  echo "neofetch" >> /root/.bashrc
+NEOFETCH_USER="${SUDO_USER:-root}"
+NEOFETCH_HOME=$(getent passwd "$NEOFETCH_USER" | cut -d: -f6)
+if [[ -z "$NEOFETCH_HOME" || ! -d "$NEOFETCH_HOME" ]]; then
+  echo "Could not determine a valid home directory for Neofetch user '$NEOFETCH_USER'. Exiting."
+  exit 1
 fi
 
-mkdir -p /root/.config/neofetch
-cat << 'EOF' > /root/.config/neofetch/config.conf
+echo "Configuring Neofetch for user '$NEOFETCH_USER'..."
+touch "$NEOFETCH_HOME/.bashrc"
+if ! grep -qx "neofetch" "$NEOFETCH_HOME/.bashrc"; then
+  echo "neofetch" >> "$NEOFETCH_HOME/.bashrc"
+fi
+
+mkdir -p "$NEOFETCH_HOME/.config/neofetch"
+cat << 'EOF' > "$NEOFETCH_HOME/.config/neofetch/config.conf"
 print_info() {
     info title
     info underline
@@ -49,6 +56,9 @@ print_info() {
     info "Memory" memory
 }
 EOF
+
+  chown -R "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.config/neofetch"
+  chown "$NEOFETCH_USER:$NEOFETCH_USER" "$NEOFETCH_HOME/.bashrc"
 
 # ----------------------------
 # Enable root SSH login with password
@@ -98,8 +108,6 @@ if [[ -z "$TARGET_HOME" || ! -d "$TARGET_HOME" ]]; then
   echo "Could not determine a valid home directory for '$TARGET_USER'. Exiting."
   exit 1
 fi
-TARGET_UID=$(id -u "$TARGET_USER")
-TARGET_GID=$(id -g "$TARGET_USER")
 echo "✅ Added '$TARGET_USER' to the docker group."
 
 
@@ -141,38 +149,35 @@ su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/portainer' && docker compose up 
 echo "✅ Portainer is running on https://$(hostname -I | awk '{print $1}'):9443"
 
 # ----------------------------
-# Install code-server
+# Install Tugtainer
 # ----------------------------
-echo "Setting up code-server..."
-mkdir -p "$TARGET_HOME/docker/code-server"
-chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/code-server"
+echo "Setting up Tugtainer..."
+mkdir -p "$TARGET_HOME/docker/tugtainer"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/tugtainer"
 
-cat <<EOF > "$TARGET_HOME/docker/code-server/compose.yml"
+cat <<'EOF' > "$TARGET_HOME/docker/tugtainer/compose.yml"
 services:
-  code-server:
-    image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server
-    environment:
-      - PUID=$TARGET_UID
-      - PGID=$TARGET_GID
-      - TZ=America/Los_Angeles
-      - PROXY_DOMAIN=code-code.mikehathaway.com
-      - DEFAULT_WORKSPACE=/config/workspace
-      - PWA_APPNAME=code-server
+  tugtainer:
+    image: ghcr.io/quenary/tugtainer:latest
+    container_name: tugtainer
     volumes:
-      - code_config:/config
-    ports:
-      - 8443:8443
+      - ./tugtainer_data:/tugtainer # Store database and config next to this compose file
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Direct Docker socket access
     restart: unless-stopped
-
-volumes:
-  code_config:
+    environment:
+      # The list of available variables is in env.example on the GitHub repo
+      DOCKER_HOST: unix:///var/run/docker.sock # Connects directly to local Docker socket
+      # Set a secret for enhanced security, used for backend-agent requests signature
+      AGENT_SECRET: your_secure_secret_here
+    ports:
+      - '9412:80' # Exposes the web UI on port 9412
 EOF
 
-chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/code-server/compose.yml"
-su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/code-server' && docker compose up -d"
-echo "✅ code-server is running on https://$(hostname -I | awk '{print $1}'):8443"
+chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/docker/tugtainer/compose.yml"
+su - "$TARGET_USER" -c "cd '$TARGET_HOME/docker/tugtainer' && docker compose up -d"
+echo "✅ Tugtainer is running on http://$(hostname -I | awk '{print $1}'):9412"
+
 neofetch
 echo "=========================="
-echo "All done! Git, Docker, Portainer, code-server, SSH, and Neofetch are installed and configured."
+echo "All done! Git, Docker, Portainer, Tugtainer, SSH, and Neofetch are installed and configured."
 echo "Log out and back in as '$TARGET_USER' before running Docker commands directly as that user."

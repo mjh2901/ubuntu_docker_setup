@@ -71,8 +71,7 @@ The script will:
 - Add that user to the Docker group
 - Create a Docker workspace at `~/docker`
 - Set up Portainer in `~/docker/portainer` with `docker-compose.yml`
-- Set up code-server in `~/docker/code-server` with `compose.yml`
-- Install Neofetch, configure it to show the server IP, and run it at login
+- Install Neofetch, configure it to show the server IP, and run it at login for the user who invoked `sudo`
 
 > **Note:** You may need to log out and back in for Docker group changes to take effect.
 
